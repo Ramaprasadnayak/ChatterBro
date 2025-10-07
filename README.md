@@ -1,3 +1,3 @@
-# 💻 CodeChef Problem Solutions in C
+# 💻 Flutter Projects
 
-This repository contains my personal solutions to various **CodeChef** problems, all implemented in **C language**. It serves as a practice log and a resource for others learning C through competitive programming.
+This repository contains my mobile applications which i developed using flutter
