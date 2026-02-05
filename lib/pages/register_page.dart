@@ -23,25 +23,35 @@ class RegisterPageState extends State<RegisterPage>{
       try{
         await authService.signUpWithEmailPassword(email.text.trim(), password.text.trim());
         Navigator.pushReplacement(context,
-        MaterialPageRoute(builder: (context) => Homepage()),
+        MaterialPageRoute(builder: (context) => Homepage(isDark: false)),
       );
       }
       catch(e){
-        showDialog(context: context,builder:(context)=>AlertDialog(
-          title: Text(e.toString()),
-        ));
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Register failed: ${e.toString()}'),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.redAccent,
+        ),);
+      }
       }
       else{
-        showDialog(context: context, builder:(context)=>const AlertDialog(title: Text("Passwords dont match"),));
+        SnackBar(
+          content: Text('Enter same password'),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.redAccent,
+      );      
       }
   }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text("Register Page",),backgroundColor: Color.fromARGB(255, 240, 245, 250),automaticallyImplyLeading: false,
+      ),
       body: BackgroundColor(
-        color1: Color(0xFF4ADEDE),
-        color2: Color(0xFF1E1E2F),
+        color1: Color.fromARGB(255, 255, 255, 255),
+        color2: Color(0xFF4ADEDE),
         mychild: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -49,7 +59,7 @@ class RegisterPageState extends State<RegisterPage>{
               width: 320,
               height:430,
               decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 220, 213, 213),
+                color: const Color.fromARGB(255, 255, 255, 255),
                 borderRadius: BorderRadius.circular(40),
                 boxShadow: [
                   BoxShadow(color: Colors.black12)
@@ -66,7 +76,8 @@ class RegisterPageState extends State<RegisterPage>{
                       textwidth: 260,
                       visibility: false, 
                       control: email, 
-                      myhinttext: "enter your email."
+                      myhinttext: "enter your email.",
+                      eyebutton: false
                     ),
                     SizedBox(height: 10),
                     TextFields(
@@ -74,7 +85,8 @@ class RegisterPageState extends State<RegisterPage>{
                       textwidth: 260,
                       visibility: true,
                       control: password, 
-                      myhinttext: "Enter your password."
+                      myhinttext: "Enter your password.",
+                      eyebutton: true
                     ),
                     SizedBox(height: 10),
                     TextFields(
@@ -82,7 +94,8 @@ class RegisterPageState extends State<RegisterPage>{
                       textwidth: 260,
                       visibility: true,
                       control: password2, 
-                      myhinttext: "Confirm password."
+                      myhinttext: "Confirm password.",
+                      eyebutton: true
                     ),
                     SizedBox(height: 20),
                     MyButton(

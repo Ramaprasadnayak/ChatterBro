@@ -3,23 +3,23 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class AuthServices {
+  //create instances of firebase auth and firestore so that u dont hav to caall explicitily
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // ✅ Get current user
+  //boolean to check current user
   User? getCurrentuser() {
     return _auth.currentUser;
   }
 
-  // ✅ Sign In
+  // Sign In
   Future<UserCredential> signInWithEmailPassword(String email, String password) async {
     try {
       UserCredential userCredential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
-
-      // Update user info in Firestore (merge keeps old fields)
+      // Update user info in Firestore
       await _firestore.collection("Users").doc(userCredential.user!.uid).set(
         {
           'uid': userCredential.user!.uid,
@@ -35,7 +35,7 @@ class AuthServices {
     }
   }
 
-  // ✅ Sign Up
+  // Sign Up
   Future<UserCredential> signUpWithEmailPassword(String email, String password) async {
     try {
       UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
@@ -54,7 +54,7 @@ class AuthServices {
       throw Exception(e.code);
     }
   }
-Future<void> addChatByEmail(BuildContext context, String targetEmail) async {
+Future<void> addChatByEmail(BuildContext context,String username, String targetEmail) async {
   final currentUser = _auth.currentUser;
   if (currentUser == null) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -71,7 +71,7 @@ Future<void> addChatByEmail(BuildContext context, String targetEmail) async {
   }
 
   try {
-    // ✅ Check if target email exists in Firestore
+    // Check if target email exists in Firestore
     final userQuery = await _firestore
         .collection('Users')
         .where('email', isEqualTo: targetEmail.trim())
@@ -86,7 +86,7 @@ Future<void> addChatByEmail(BuildContext context, String targetEmail) async {
 
     final targetUid = userQuery.docs.first.id;
 
-    // ✅ Prevent self-chat
+    // Prevent self-chat
     if (targetUid == currentUser.uid) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("You cannot start a chat with yourself.")),
@@ -94,12 +94,12 @@ Future<void> addChatByEmail(BuildContext context, String targetEmail) async {
       return;
     }
 
-    // ✅ Create a unique chatId (sorted)
+    // Create a unique chatId (sorted)
     final chatId = currentUser.uid.compareTo(targetUid) > 0
         ? '${currentUser.uid}_$targetUid'
         : '${targetUid}_${currentUser.uid}';
 
-    // ✅ Create or merge chat document
+    // Create or merge chat document
     await _firestore.collection('chat_rooms').doc(chatId).set({
       'users': [currentUser.uid, targetUid],
       'emails': [currentUser.email, targetEmail],
@@ -108,10 +108,9 @@ Future<void> addChatByEmail(BuildContext context, String targetEmail) async {
     }, SetOptions(merge: true));
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Chat created successfully ✅")),
+      const SnackBar(content: Text("Chat created successfully...")),
     );
   } catch (e) {
-    print("Auth UID: ${currentUser.uid}");
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text("Error: ${e.toString()}")),
     );

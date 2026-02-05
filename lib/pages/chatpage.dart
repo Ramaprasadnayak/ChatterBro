@@ -1,3 +1,4 @@
+import 'package:chatterbro/components/background_color.dart';
 import 'package:chatterbro/components/text_field.dart';
 import 'package:chatterbro/services/auth_services.dart';
 import 'package:chatterbro/services/chat_services.dart';
@@ -7,9 +8,11 @@ import 'package:flutter/material.dart';
 class Chatpage extends StatelessWidget {
   final String receiverEmail;  
   final String receiverID;
+  final bool isDark;
 
   Chatpage({
     super.key,
+    required this.isDark,
     required this.receiverEmail,
     required this.receiverID,
   });
@@ -40,16 +43,47 @@ class Chatpage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(receiverEmail),
-        backgroundColor: Color(0xFF0F0C29),  
-        foregroundColor: Colors.white,
+        actions: [
+  PopupMenuButton<String>(
+    icon: Icon(Icons.more_vert), // 3-dot icon
+    onSelected: (String value) async { // make this async
+      if (value == 'Clear Chat') {
+        final currentUserId = _authServices.getCurrentuser()!.uid;
+        await _chatServices.clearChat(currentUserId, receiverID);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Chat cleared!"))
+        );
+      } else if (value == 'Block User') {
+        print('Block User clicked');
+      }
+    },
+    itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+      const PopupMenuItem<String>(
+        value: 'Clear Chat',
+        child: Text('Clear Chat'),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: _buildMessageList(currentUserId),
+      const PopupMenuItem<String>(
+        value: 'Block User',
+        child: Text('Block User'),
+      ),
+    ],
+  ),
+],
+        backgroundColor:isDark? Color.fromARGB(255, 15, 15, 104): const Color.fromARGB(255, 255, 255, 255),  
+        foregroundColor: isDark? Color.fromARGB(255, 247, 247, 247): const Color.fromARGB(255, 0, 0, 0),
+      ),
+      body: BackgroundColor(
+        color1: isDark? Color.fromARGB(255, 15, 15, 104): const Color.fromARGB(255, 255, 255, 255),
+        color2: isDark? Color.fromARGB(255, 29, 85, 141): Color.fromARGB(255, 74, 108, 140) ,
+        mychild:
+          Column(
+            children: [
+              Expanded(
+                child: _buildMessageList(currentUserId),
+              ),
+              _buildUserInput(context),
+            ],
           ),
-          _buildUserInput(context),
-        ],
       ),
     );
   }
@@ -151,7 +185,8 @@ final String timeStr = timestamp != null
               textwidth:260, 
               visibility: false, 
               control: _messageCon, 
-              myhinttext: "Type a message"
+              myhinttext: "Type a message",
+              eyebutton: false,
             )
           ),
           SizedBox(width: 8),
@@ -160,7 +195,7 @@ final String timeStr = timestamp != null
                 await sendMessage(context);
             },
             icon: const Icon(Icons.arrow_upward),
-            color: Color(0xFF302B63),  
+            color: Color.fromARGB(255, 0, 0, 0),  
             padding: EdgeInsets.zero,
             constraints: BoxConstraints(minWidth: 44, minHeight: 44),
           ),

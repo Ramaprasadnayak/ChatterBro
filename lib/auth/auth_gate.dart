@@ -12,7 +12,7 @@ class AuthGate extends StatelessWidget{
         stream: FirebaseAuth.instance.authStateChanges(), 
         builder: (context,snapshot){
           if(snapshot.hasData){
-            return Homepage();
+            return Homepage(isDark: false);
           }
           else{
             return LoginPage();

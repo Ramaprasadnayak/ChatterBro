@@ -21,21 +21,25 @@ class LoginPageState extends State<LoginPage>{
     try{
       await authService.signInWithEmailPassword(email.text.trim(), password.text.trim());
       Navigator.pushReplacement(context,
-      MaterialPageRoute(builder: (context) => Homepage()),
+      MaterialPageRoute(builder: (context) => Homepage(isDark: false)),
     );
     }
     catch(e){
-      showDialog(context: context,builder:(context)=>AlertDialog(
-        title: Text(e.toString()),
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Login failed: ${e.toString()}'),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.redAccent,
+      ),);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: Text("Login Page"),backgroundColor: Color.fromARGB(255, 240, 245, 250),automaticallyImplyLeading: false),
       body: BackgroundColor(
-        color1: Color(0xFF1E1E2F),
+        color1: Color.fromARGB(255, 255, 255, 255),
         color2: Color(0xFF4ADEDE),
         mychild: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -44,7 +48,7 @@ class LoginPageState extends State<LoginPage>{
               width: 320,
               height:350,
               decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 220, 213, 213),
+                color: const Color.fromARGB(255, 255, 255, 255),
                 borderRadius: BorderRadius.circular(40),
                 boxShadow: [
                   BoxShadow(color: Colors.black12)
@@ -61,7 +65,8 @@ class LoginPageState extends State<LoginPage>{
                       textheight: 50,
                       visibility: false, 
                       control: email, 
-                      myhinttext: "enter your email."
+                      myhinttext: "enter your email.",
+                      eyebutton: false
                     ),
                     SizedBox(height: 10),
                     TextFields(
@@ -69,7 +74,8 @@ class LoginPageState extends State<LoginPage>{
                       textheight: 50,
                       visibility: true,
                       control: password, 
-                      myhinttext: "Enter your password."
+                      myhinttext: "Enter your password.",
+                      eyebutton: true
                     ),
                     SizedBox(height: 20),
                     MyButton(

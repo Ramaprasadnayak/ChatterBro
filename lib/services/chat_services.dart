@@ -1,4 +1,4 @@
-import 'package:chatterbro/models/mesage.dart';  // Fixed: Use 'message.dart' (rename file if needed)
+import 'package:chatterbro/models/mesage.dart';  
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -6,9 +6,29 @@ class ChatServices {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // ✅ Unchanged: Get stream of ONLY the current user's chat partners (from 'chat_rooms')
-  // New users: Empty list. After + button: Shows only added partners (no global user discovery).
-  // Returns list of { 'email': otherEmail, 'uid': otherUid } to match your UI expectations.
+  Future<void> deleteChatRoom(String otherUserId) async {
+  final currentUser = _auth.currentUser;
+  if (currentUser == null) throw Exception("Not logged in");
+
+  List<String> ids = [currentUser.uid, otherUserId];
+  ids.sort();
+  String chatRoomID = ids.join('_');
+
+  final chatRef = _firestore.collection('chat_rooms').doc(chatRoomID);
+
+  // Delete all messages in the chat room first
+  final messagesSnapshot = await chatRef.collection('messages').get();
+  final batch = _firestore.batch();
+  for (var doc in messagesSnapshot.docs) {
+    batch.delete(doc.reference);
+  }
+  await batch.commit();
+
+  // Delete chat room itself
+  await chatRef.delete();
+}
+
+
   Stream<List<Map<String, dynamic>>> getUsersStream() {
     final currentUid = _auth.currentUser!.uid;
     final currentEmail = _auth.currentUser!.email!;  // For filtering self
@@ -22,8 +42,6 @@ class ChatServices {
             final data = doc.data();
             final users = List<String>.from(data['users'] ?? []);
             final emails = List<String>.from(data['emails'] ?? []);
-
-            // Find the other user (not current)
             final otherUid = users.firstWhere(
               (uid) => uid != currentUid,
               orElse: () => '',
@@ -46,6 +64,9 @@ class ChatServices {
           }).where((userData) => userData.isNotEmpty).toList();  // Filter invalid
         });
   }
+
+
+
   Future<void> sendMessage(String receiverId, String message) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -57,7 +78,7 @@ class ChatServices {
 
     final currentUid = currentUser.uid;
     final currentEmail = currentUser.email!;
-    final timestamp = Timestamp.now();
+    final timestamp = FieldValue.serverTimestamp();
 
     // Build chatRoomID (sorted for uniqueness)
     List<String> ids = [currentUid, receiverId];
@@ -65,8 +86,6 @@ class ChatServices {
     final chatRoomID = ids.join('_');
     final chatRef = _firestore.collection('chat_rooms').doc(chatRoomID);
     final messagesRef = chatRef.collection('messages');
-
-    // Atomic transaction: Create parent (if needed) + add message + update metadata
     await _firestore.runTransaction((transaction) async {
       final chatSnapshot = await transaction.get(chatRef);
 
@@ -104,7 +123,7 @@ class ChatServices {
     });
   }
 
-  // ✅ Unchanged: Add new chat by email (updated: normalization, no throw on existing, self-check, rules compliance)
+  // Add new chat by email (updated: normalization, no throw on existing, self-check, rules compliance)
   Future<void> addChatByEmail(String targetEmail) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -114,13 +133,13 @@ class ChatServices {
     // Normalize target email (lowercase, trim) for consistency
     final normalizedTargetEmail = targetEmail.toLowerCase().trim();
 
-    // 1️⃣ Check if target email exists in Firebase Auth
+    // Check if target email exists in Firebase Auth
     final methods = await _auth.fetchSignInMethodsForEmail(normalizedTargetEmail);
     if (methods.isEmpty) {
       throw Exception("No user found with that email (not registered in the app)");
     }
 
-    // 2️⃣ Get target user's UID from Firestore (query normalized)
+    //  Get target user's UID from Firestore (query normalized)
     final userQuery = await _firestore
         .collection('Users')
         .where('email', isEqualTo: normalizedTargetEmail)
@@ -133,27 +152,26 @@ class ChatServices {
     final targetUid = userQuery.docs.first.id;
     final targetEmailFromDb = userQuery.docs.first.data()['email'] as String;  // Normalized from DB
 
-    // 3️⃣ Skip if self-chat
+    // Skip if self-chat
     if (targetUid == currentUser.uid) {
       throw Exception("Cannot create chat with yourself");
     }
 
-    // 4️⃣ Build unique chatRoomID (sorted)
+    //  Build unique chatRoomID (sorted)
     List<String> ids = [currentUser.uid, targetUid];
     ids.sort();
     String chatRoomID = ids.join('_');
 
-    // 5️⃣ Check if chat already exists (no throw: just update metadata for UX)
+    //  Check if chat already exists (no throw: just update metadata for UX)
     final chatDoc = await _firestore.collection('chat_rooms').doc(chatRoomID).get();
     if (chatDoc.exists) {
-      // Update existing (e.g., bump timestamp)
       await _firestore.collection('chat_rooms').doc(chatRoomID).update({
         'updatedAt': FieldValue.serverTimestamp(),
       });
       return;  // Success: Already in list
     }
 
-    // 6️⃣ Create new chat room metadata (ensures rules pass: exactly 2 users, required fields)
+    // Create new chat room metadata (ensures rules pass: exactly 2 users, required fields)
     await _firestore.collection('chat_rooms').doc(chatRoomID).set({
       'users': [currentUser.uid, targetUid],  // Array of exactly 2
       'emails': [currentUser.email!, targetEmailFromDb],  // Normalized
@@ -186,4 +204,34 @@ class ChatServices {
         .snapshots();
   });
 }
+  Future<void> clearChat(String userId, String otherUserId) async {
+  List<String> ids = [userId, otherUserId];
+  ids.sort();
+  String chatRoomID = ids.join('_');
+
+  final chatRef = FirebaseFirestore.instance
+      .collection('chat_rooms')
+      .doc(chatRoomID)
+      .collection('messages');
+
+  final snapshot = await chatRef.get();
+
+  // Batch delete all messages
+  final batch = FirebaseFirestore.instance.batch();
+  for (var doc in snapshot.docs) {
+    batch.delete(doc.reference);
+  }
+  await batch.commit();
+
+  // Optional: clear lastMessage & updatedAt in chat room
+  await FirebaseFirestore.instance
+      .collection('chat_rooms')
+      .doc(chatRoomID)
+      .update({
+    'lastMessage': '',
+    'updatedAt': FieldValue.serverTimestamp(),
+  });
+}
+
+
 }
