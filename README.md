@@ -11,7 +11,7 @@ A simple chat app using **Flutter** and **Firebase**.
 ## Setup
 
 1. Clone the repo:  
-git clone <repo-url>
+git clone https://github.com/Ramaprasadnayak/ChatterBro.git
 cd ChatterBro
 
 2. Install dependencies:
