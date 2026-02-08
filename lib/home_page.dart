@@ -97,7 +97,7 @@ class Homepage extends StatelessWidget {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error deleting Chat: $e")),
+        SnackBar(content: Text("Errror deleting Chat: $e")),
       );
     }});
     } else {
