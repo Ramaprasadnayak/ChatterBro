@@ -6,7 +6,7 @@ class TextFields extends StatefulWidget {
   final String myhinttext;
   final double textwidth, textheight;
   final bool eyebutton;
-  // required fields
+  // required fields 
   const TextFields({
     super.key,
     required this.textheight,
