@@ -19,7 +19,7 @@ class AuthServices {
         email: email,
         password: password,
       );
-      // Update user info in Firestore
+      // Update user info in Firestore.
       await _firestore.collection("Users").doc(userCredential.user!.uid).set(
         {
           'uid': userCredential.user!.uid,
