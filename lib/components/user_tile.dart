@@ -17,7 +17,7 @@ class UserTile extends StatelessWidget{
     required this.onDelete,
     required this.isDark
   });
-  // theme config
+  // theme configs
    final theme = ThemeConfig();
 
   @override
