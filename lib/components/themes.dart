@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class ThemeConfig {
-  // Singleton instance
+  // Singleton instances
   static final ThemeConfig _instance =ThemeConfig._internal();
   factory ThemeConfig() => _instance;
   ThemeConfig._internal();
